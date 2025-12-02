@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd minor_project && npm install && npm run build",
+  "outputDirectory": "minor_project/dist",
+  "installCommand": "cd minor_project && npm install"
+}

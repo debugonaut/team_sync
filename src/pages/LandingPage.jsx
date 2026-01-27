@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Users, MessageCircle, Award, Github, Linkedin, Instagram } from 'lucide-react'
+import { ArrowRight, Users, MessageCircle, Award, Github, Linkedin, Instagram, Target, Zap, Shield, TrendingUp } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 const LandingPage = () => {
@@ -34,6 +34,20 @@ const LandingPage = () => {
     return () => clearTimeout(timer)
   }, [])
 
+  const services = [
+    { icon: Target, title: "Smart Matching", desc: "AI-powered algorithm matches you with teammates based on skills and interests" },
+    { icon: MessageCircle, title: "Real-time Chat", desc: "Seamless communication with your team members and project collaboration" },
+    { icon: Award, title: "Event Integration", desc: "Stay updated with hackathons, competitions, and college events" },
+    { icon: Users, title: "Team Building", desc: "Find the perfect team composition for any project or competition" }
+  ]
+
+  const whyChooseUs = [
+    { icon: Zap, title: "Lightning Fast", desc: "Find your perfect team in minutes, not days" },
+    { icon: Shield, title: "MITAOE Exclusive", desc: "Verified students only - safe and trusted environment" },
+    { icon: TrendingUp, title: "Proven Success", desc: "150+ teams formed, 50+ hackathons won" },
+    { icon: Target, title: "Skill-Based", desc: "Match based on complementary skills and domains" }
+  ]
+
   const testimonials = [
     { name: "Arjun K.", college: "MITAOE - CSE", text: "Found the perfect design partner for our hackathon!" },
     { name: "Priya S.", college: "MITAOE - IT", text: "TeamSync helped me connect with amazing developers." },
@@ -49,7 +63,19 @@ const LandingPage = () => {
         transition={{ duration: 1 }}
         className="relative min-h-screen flex items-center justify-center px-4"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-electric-blue/10 via-transparent to-neon-purple/10" />
+        {/* Video Background */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="../video.mp4" type="video/mp4" />
+        </video>
+        
+        {/* Dark Overlay */}
+        <div className="absolute inset-0 bg-black/50" />
         
         <div className="relative z-10 text-center max-w-6xl mx-auto">
           <motion.div
@@ -116,6 +142,82 @@ const LandingPage = () => {
               <div className="text-gray-400">Successful Matches</div>
             </div>
           </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Services Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 100 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="py-20 px-4 bg-gradient-to-b from-dark to-dark-gray"
+      >
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-space font-bold text-center mb-4 gradient-text">
+            Our Services
+          </h2>
+          <p className="text-center text-gray-400 mb-16 text-lg">Everything you need to build winning teams</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {services.map((service, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -10, scale: 1.05 }}
+                className="glass rounded-2xl p-6 text-center hover:shadow-neon-blue/20 transition-all duration-300"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-electric-blue to-neon-teal rounded-full flex items-center justify-center">
+                  <service.icon size={32} />
+                </div>
+                <h3 className="text-xl font-bold mb-3 text-electric-blue">{service.title}</h3>
+                <p className="text-gray-400">{service.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Why Choose Us Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 100 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+        className="py-20 px-4"
+      >
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-space font-bold text-center mb-4 gradient-text">
+            Why Choose TeamSync?
+          </h2>
+          <p className="text-center text-gray-400 mb-16 text-lg">The ultimate platform for MITAOE student collaboration</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {whyChooseUs.map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.2, duration: 0.6 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.03 }}
+                className="glass rounded-2xl p-8 hover:shadow-neon-purple/20 transition-all duration-300"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-neon-purple to-neon-teal rounded-xl flex items-center justify-center flex-shrink-0">
+                    <item.icon size={28} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2 text-neon-purple">{item.title}</h3>
+                    <p className="text-gray-300">{item.desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </motion.section>
 

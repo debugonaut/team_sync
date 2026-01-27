@@ -11,14 +11,50 @@ const LoginPage = () => {
     email: '',
     password: '',
     name: '',
-    college: '',
+    studentId: '',
     rememberMe: false
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e) => {
+  const API_URL = 'http://localhost:5000/api'
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Simulate login/signup
-    navigate('/dashboard')
+    setLoading(true)
+    setError('')
+
+    try {
+      const endpoint = isLogin ? '/auth/login' : '/auth/signup'
+      const body = isLogin 
+        ? { email: formData.email, password: formData.password }
+        : { name: formData.name, email: formData.email, password: formData.password, studentId: formData.studentId }
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Authentication failed')
+      }
+
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+
+      if (data.user.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogleAuth = () => {
@@ -133,14 +169,20 @@ const LoginPage = () => {
                 <div>
                   <input
                     type="text"
-                    placeholder="College/University"
-                    value={formData.college}
-                    onChange={(e) => setFormData({...formData, college: e.target.value})}
+                    placeholder="Student ID"
+                    value={formData.studentId}
+                    onChange={(e) => setFormData({...formData, studentId: e.target.value})}
                     className="w-full bg-dark-gray border border-gray-700 rounded-xl px-4 py-3 focus:border-electric-blue focus:outline-none transition-colors"
                     required
                   />
                 </div>
               </>
+            )}
+
+            {error && (
+              <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
             )}
 
             <div className="relative">
@@ -195,9 +237,10 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02, boxShadow: "0 0 30px rgba(0, 191, 255, 0.4)" }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full bg-gradient-to-r from-electric-blue to-neon-teal py-3 rounded-xl font-semibold text-lg hover:shadow-neon-blue transition-all duration-300"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-electric-blue to-neon-teal py-3 rounded-xl font-semibold text-lg hover:shadow-neon-blue transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
             </motion.button>
 
             <div className="relative">

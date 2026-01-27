@@ -5,6 +5,8 @@ A modern, dark-themed professional collaboration platform specifically designed 
 ## 🎨 Features
 
 - **Modern Dark Theme**: Deep gray (#0D0D0D) with electric blue (#00BFFF), purple (#8A2BE2), and teal (#00E5A0) accents
+- **Role-Based Authentication**: Separate admin and student user roles with JWT authentication
+- **Admin Dashboard**: Full user management with CRUD operations, analytics, and role assignment
 - **Tinder-Style Team Matching**: Swipe-based interface to find teammates with complementary skills
 - **Skill-Based Pairing**: Match students based on domains (coding, design, marketing, data science)
 - **Event Integration**: Connect teams for hackathons, competitions, and college events
@@ -25,41 +27,104 @@ A modern, dark-themed professional collaboration platform specifically designed 
 
 ## 🛠️ Tech Stack
 
+### Frontend
 - **React 18** - Modern React with hooks
 - **Vite** - Fast build tool and dev server
 - **Tailwind CSS** - Utility-first CSS framework
 - **Framer Motion** - Animation library
 - **React Router** - Client-side routing
 - **Lucide React** - Beautiful icons
-- **Chart.js** - Data visualization (ready for integration)
 
-## 📦 Installation
+### Backend
+- **Node.js + Express** - RESTful API server
+- **MongoDB** - NoSQL database for user data
+- **Mongoose** - MongoDB object modeling
+- **JWT** - JSON Web Token authentication
+- **bcryptjs** - Password hashing
+- **CORS** - Cross-origin resource sharing
 
-1. **Clone the repository**
+## 📦 Installation & Setup
+
+### Prerequisites
+- Node.js (v16 or higher)
+- MongoDB (local or MongoDB Atlas)
+- npm or yarn
+
+### Backend Setup
+
+1. **Navigate to server directory**
    ```bash
-   git clone <repository-url>
-   cd minor_project
+   cd server
    ```
 
-2. **Install dependencies**
+2. **Install backend dependencies**
    ```bash
    npm install
    ```
 
-3. **Start the development server**
+3. **Configure environment variables**
+   - The `.env` file is already configured with:
+   ```env
+   PORT=5000
+   MONGODB_URI=mongodb://localhost:27017/teamsync
+   JWT_SECRET=your_jwt_secret_key_here_change_in_production
+   ```
+   - Update `MONGODB_URI` if using MongoDB Atlas
+
+4. **Start MongoDB**
+   ```bash
+   # If using local MongoDB
+   mongod
+   ```
+
+5. **Create admin user (First time only)**
+   ```bash
+   npm run seed:admin
+   ```
+   This creates:
+   - Email: `admin@mitaoe.ac.in`
+   - Password: `Admin@123`
+   - ⚠️ Change password after first login!
+
+6. **Start backend server**
    ```bash
    npm run dev
    ```
+   Server runs on `http://localhost:5000`
+
+### Frontend Setup
+
+1. **Navigate to root directory**
+   ```bash
+   cd ..
+   ```
+
+2. **Install frontend dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start frontend development server**
+   ```bash
+   npm run dev
+   ```
+   Frontend runs on `http://localhost:5173`
 
 4. **Open your browser**
-   Navigate to `http://localhost:3000`
+   Navigate to `http://localhost:5173`
 
 ## 🎯 Available Scripts
 
-- `npm run dev` - Start development server
+### Frontend Scripts
+- `npm run dev` - Start frontend development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+### Backend Scripts (in `/server` directory)
+- `npm run dev` - Start backend server with nodemon
+- `npm start` - Start backend server
+- `npm run seed:admin` - Create default admin user
 
 ## 🎨 Design System
 
@@ -83,13 +148,22 @@ A modern, dark-themed professional collaboration platform specifically designed 
 
 ## 🔗 Navigation
 
+### Public Routes
 - **/** - Landing page
 - **/login** - Login/Signup page
+
+### Student Routes (Requires Authentication)
 - **/dashboard** - Main user dashboard
 - **/team-matching** - Tinder-style team matching interface
 - **/chat** - Team communication
 - **/profile** - User profile and skills
-- **/admin** - Admin dashboard
+- **/community** - Community discussions
+- **/clubs-events** - Events and clubs
+- **/peer-evaluation** - Peer review system
+- **/projects** - Project management
+
+### Admin Routes (Admin Only)
+- **/admin** - Admin dashboard with user management and analytics
 
 ## 🎭 Animations
 
@@ -104,6 +178,187 @@ A modern, dark-themed professional collaboration platform specifically designed 
 - **Mobile**: Stacked layout with bottom navigation
 - **Tablet**: Optimized grid layouts
 - **Desktop**: Full sidebar navigation with multi-column layouts
+
+## 👥 User Roles & Permissions
+
+### Student Role
+- ✅ Create account and login
+- ✅ Find and match with teammates
+- ✅ Join events and hackathons
+- ✅ Chat with team members
+- ✅ Manage personal profile
+- ✅ View community discussions
+- ❌ Cannot access admin dashboard
+- ❌ Cannot manage other users
+
+### Admin Role
+- ✅ All student permissions
+- ✅ Access admin dashboard
+- ✅ View all users and analytics
+- ✅ Delete users
+- ✅ Change user roles (student ↔ admin)
+- ✅ View platform statistics
+- ✅ Monitor user activity
+
+## 🔐 Authentication Flow
+
+1. **Signup**: User creates account with name, email, password, and student ID
+2. **Login**: User logs in with email and password
+3. **JWT Token**: Server generates JWT token with user ID and role
+4. **Storage**: Token and user data stored in localStorage
+5. **Protected Routes**: Frontend checks token before accessing protected pages
+6. **Role Check**: Admin routes verify user role before granting access
+7. **Logout**: Clears token and user data from localStorage
+
+## 📡 API Endpoints
+
+### Authentication
+- `POST /api/auth/signup` - Create new user account
+- `POST /api/auth/login` - Login user
+
+### User Management
+- `GET /api/profile/:id` - Get user profile (Protected)
+- `GET /api/users` - Get all users
+- `PUT /api/profile/:id` - Update user profile
+
+### Admin Only
+- `GET /api/admin/users` - Get all users with filters (Admin)
+- `GET /api/admin/users/:id` - Get specific user (Admin)
+- `DELETE /api/admin/users/:id` - Delete user (Admin)
+- `PATCH /api/admin/users/:id/role` - Update user role (Admin)
+- `GET /api/admin/analytics` - Get platform analytics (Admin)
+
+## 🗂️ Project Structure
+
+```
+Minorproject(teamsync)/
+├── server/                    # Backend
+│   ├── models/
+│   │   └── User.js           # User schema with role field
+│   ├── routes/
+│   │   ├── authRoutes.js     # Authentication endpoints
+│   │   ├── userRoutes.js     # User management endpoints
+│   │   └── adminRoutes.js    # Admin-only endpoints
+│   ├── middleware/
+│   │   └── auth.js           # JWT auth & admin check middleware
+│   ├── .env                  # Environment variables
+│   ├── server.js             # Express server setup
+│   ├── seedAdmin.js          # Admin user seed script
+│   ├── API_DOCS.md           # API documentation
+│   └── package.json
+├── src/
+│   ├── pages/
+│   │   ├── LoginPage.jsx     # Login/Signup with API integration
+│   │   ├── Dashboard.jsx     # Student dashboard
+│   │   ├── AdminDashboard.jsx # Admin dashboard with user management
+│   │   ├── TeamMatching.jsx
+│   │   ├── ChatInterface.jsx
+│   │   ├── ProfilePage.jsx
+│   │   └── ...
+│   ├── config/
+│   │   └── api.js            # API configuration & helpers
+│   ├── App.jsx
+│   └── main.jsx
+├── README.md
+└── package.json
+```
+
+## 🚀 Quick Start Guide
+
+### For Development
+
+```bash
+# Terminal 1 - Backend
+cd server
+npm install
+npm run seed:admin
+npm run dev
+
+# Terminal 2 - Frontend
+npm install
+npm run dev
+```
+
+### Default Admin Credentials
+- **Email**: admin@mitaoe.ac.in
+- **Password**: Admin@123
+- **Role**: admin
+
+### Testing the Application
+
+1. **Create Student Account**
+   - Go to http://localhost:5173/login
+   - Click "Sign Up"
+   - Fill in details (role defaults to "student")
+   - Login and access student dashboard
+
+2. **Login as Admin**
+   - Use default admin credentials
+   - Access admin dashboard at `/admin`
+   - View analytics and manage users
+
+3. **Admin Features**
+   - Click "Manage Users" in sidebar
+   - View all registered users
+   - Click shield icon to toggle user role
+   - Click trash icon to delete user
+   - View real-time analytics
+
+## 🔧 Configuration
+
+### Backend Configuration (`server/.env`)
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/teamsync
+JWT_SECRET=your_jwt_secret_key_here_change_in_production
+```
+
+### Frontend API Configuration (`src/config/api.js`)
+```javascript
+export const API_URL = 'http://localhost:5000/api'
+```
+
+## 🐛 Troubleshooting
+
+### MongoDB Connection Error
+- Ensure MongoDB is running: `mongod`
+- Check MongoDB URI in `.env` file
+- For MongoDB Atlas, use connection string with credentials
+
+### CORS Error
+- Backend already configured with CORS
+- Ensure backend is running on port 5000
+- Check API_URL in `src/config/api.js`
+
+### Authentication Error
+- Clear localStorage: `localStorage.clear()`
+- Re-login with valid credentials
+- Check JWT_SECRET in backend `.env`
+
+### Admin Access Denied
+- Ensure user role is "admin"
+- Use seed script to create admin: `npm run seed:admin`
+- Check token in localStorage contains role
+
+## 📝 Recent Changes
+
+### Backend Changes
+- ✅ Added `role` field to User model (student/admin)
+- ✅ Updated authentication to include role in JWT token
+- ✅ Created admin-only routes with role-based middleware
+- ✅ Added user management endpoints (CRUD operations)
+- ✅ Implemented analytics endpoint for admin dashboard
+- ✅ Created seed script for initial admin user
+
+### Frontend Changes
+- ✅ Connected LoginPage to backend API
+- ✅ Implemented real authentication with JWT
+- ✅ Added role-based routing (admin vs student)
+- ✅ Updated AdminDashboard with real data from API
+- ✅ Added user management table with delete/role toggle
+- ✅ Implemented protected routes with auth checks
+- ✅ Added logout functionality
+- ✅ Created API configuration file
 
 ## 🔮 Future Enhancements
 
@@ -126,6 +381,15 @@ A modern, dark-themed professional collaboration platform specifically designed 
 
 This project is licensed under the MIT License.
 
+## 📞 Support
+
+For issues or questions:
+- Check API documentation: `server/API_DOCS.md`
+- Review troubleshooting section above
+- Contact development team
+
 ---
 
 **Built with ❤️ for MITAOE students by the TeamSync development team**
+
+**Version**: 2.0.0 (With Role-Based Authentication)

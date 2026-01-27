@@ -1,15 +1,127 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Home, Users, BarChart3, Settings, Bell, Search,
   TrendingUp, TrendingDown, Activity, UserCheck,
-  MessageSquare, Award, Calendar, Filter
+  MessageSquare, Award, Calendar, Filter, Trash2, Shield
 } from 'lucide-react'
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('home')
+  const [analytics, setAnalytics] = useState(null)
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const API_URL = 'http://localhost:5000/api'
+  const token = localStorage.getItem('token')
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+
+  useEffect(() => {
+    if (!token || currentUser.role !== 'admin') {
+      navigate('/login')
+      return
+    }
+    fetchAnalytics()
+    if (activeTab === 'users') {
+      fetchUsers()
+    }
+  }, [activeTab])
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/analytics`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch analytics')
+      const data = await response.json()
+      setAnalytics(data)
+      setLoading(false)
+    } catch (err) {
+      setError(err.message)
+      setLoading(false)
+    }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch users')
+      const data = await response.json()
+      setUsers(data.users)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const deleteUser = async (userId) => {
+    if (!confirm('Are you sure you want to delete this user?')) return
+    try {
+      const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to delete user')
+      alert('User deleted successfully')
+      fetchUsers()
+      fetchAnalytics()
+    } catch (err) {
+      alert('Error: ' + err.message)
+    }
+  }
+
+  const updateUserRole = async (userId, newRole) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role: newRole })
+      })
+      if (!response.ok) throw new Error('Failed to update role')
+      alert('Role updated successfully')
+      fetchUsers()
+      fetchAnalytics()
+    } catch (err) {
+      alert('Error: ' + err.message)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    navigate('/login')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-electric-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading admin dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !analytics) {
+    return (
+      <div className="min-h-screen bg-dark flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Error: {error}</p>
+          <button onClick={() => navigate('/login')} className="px-6 py-2 bg-electric-blue rounded-xl">
+            Go to Login
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const sidebarItems = [
     { id: 'home', icon: Home, label: 'Dashboard' },
@@ -21,33 +133,33 @@ const AdminDashboard = () => {
   const stats = [
     { 
       label: 'Total Users', 
-      value: '2,847', 
+      value: analytics?.totalUsers || 0, 
       change: '+12%', 
       trend: 'up', 
       icon: Users,
       color: 'from-electric-blue to-neon-teal'
     },
     { 
-      label: 'Active Doubts', 
-      value: '1,234', 
+      label: 'Total Students', 
+      value: analytics?.totalStudents || 0, 
       change: '+8%', 
       trend: 'up', 
-      icon: MessageSquare,
+      icon: UserCheck,
       color: 'from-neon-purple to-electric-blue'
     },
     { 
-      label: 'Resolved Today', 
-      value: '89', 
-      change: '-3%', 
-      trend: 'down', 
-      icon: UserCheck,
+      label: 'Total Admins', 
+      value: analytics?.totalAdmins || 0, 
+      change: '0%', 
+      trend: 'up', 
+      icon: Shield,
       color: 'from-neon-teal to-neon-purple'
     },
     { 
-      label: 'Response Time', 
-      value: '2.3h', 
+      label: 'Active Teams', 
+      value: '0', 
       change: '+15%', 
-      trend: 'down', 
+      trend: 'up', 
       icon: Activity,
       color: 'from-yellow-400 to-orange-500'
     }
@@ -125,6 +237,14 @@ const AdminDashboard = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            onClick={handleLogout}
+            className="w-full text-left text-red-400 hover:text-red-300 transition-colors mb-2"
+          >
+            Logout
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/')}
             className="w-full text-left text-gray-400 hover:text-white transition-colors"
           >
@@ -149,26 +269,12 @@ const AdminDashboard = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search users, doubts..."
-                  className="bg-dark border border-gray-700 rounded-xl pl-12 pr-4 py-2 focus:border-electric-blue focus:outline-none transition-colors"
-                />
+              <div className="text-right">
+                <p className="text-sm text-gray-400">Logged in as</p>
+                <p className="font-semibold">{currentUser.name}</p>
               </div>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="relative p-3 glass rounded-xl hover:bg-gray-700/50 transition-colors"
-              >
-                <Bell size={20} />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-teal rounded-full"></div>
-              </motion.button>
-
               <div className="w-10 h-10 bg-gradient-to-r from-electric-blue to-neon-purple rounded-full flex items-center justify-center">
-                <Users size={20} />
+                <Shield size={20} />
               </div>
             </div>
           </div>
@@ -208,6 +314,85 @@ const AdminDashboard = () => {
               </motion.div>
             ))}
           </div>
+
+          {/* User Management Tab */}
+          {activeTab === 'users' && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-space font-bold">Manage Users ({users.length})</h3>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={fetchUsers}
+                  className="px-4 py-2 bg-electric-blue rounded-xl hover:bg-electric-blue/80 transition-colors"
+                >
+                  Refresh
+                </motion.button>
+              </div>
+
+              <div className="glass rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-800/50">
+                      <tr>
+                        <th className="text-left p-4">Name</th>
+                        <th className="text-left p-4">Email</th>
+                        <th className="text-left p-4">Student ID</th>
+                        <th className="text-left p-4">Role</th>
+                        <th className="text-left p-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user, index) => (
+                        <motion.tr
+                          key={user._id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="border-t border-gray-800 hover:bg-gray-800/30"
+                        >
+                          <td className="p-4">{user.name}</td>
+                          <td className="p-4 text-gray-400">{user.email}</td>
+                          <td className="p-4 text-gray-400">{user.studentId}</td>
+                          <td className="p-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'admin' 
+                                ? 'bg-neon-purple/20 text-neon-purple' 
+                                : 'bg-electric-blue/20 text-electric-blue'
+                            }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => updateUserRole(user._id, user.role === 'admin' ? 'student' : 'admin')}
+                                className="p-2 glass rounded-lg hover:bg-neon-purple/20 transition-colors"
+                                title="Toggle Role"
+                              >
+                                <Shield size={16} />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => deleteUser(user._id)}
+                                className="p-2 glass rounded-lg hover:bg-red-500/20 transition-colors text-red-400"
+                                title="Delete User"
+                              >
+                                <Trash2 size={16} />
+                              </motion.button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Recent Activity */}
@@ -310,6 +495,7 @@ const AdminDashboard = () => {
                   <motion.button
                     whileHover={{ scale: 1.02, x: 4 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => setActiveTab('users')}
                     className="w-full text-left p-3 glass rounded-xl hover:bg-gray-700/50 transition-all duration-200"
                   >
                     <div className="flex items-center gap-3">

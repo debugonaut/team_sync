@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Home, MessageCircle, Search, User, Plus, Bell, 
@@ -12,6 +12,19 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('home')
+  const [currentUser, setCurrentUser] = useState(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const user = localStorage.getItem('user')
+    
+    if (!token || !user) {
+      navigate('/login')
+      return
+    }
+    
+    setCurrentUser(JSON.parse(user))
+  }, [])
   const [searchQuery, setSearchQuery] = useState('')
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -236,8 +249,9 @@ const Dashboard = () => {
                     className="absolute right-0 mt-2 w-56 glass rounded-xl p-2 z-50"
                   >
                     <div className="px-3 py-2 border-b border-gray-700 mb-2">
-                      <p className="font-semibold">Harsh Khatri</p>
-                      <p className="text-xs text-gray-400">harsh.khatri@mitaoe.ac.in</p>
+                      <p className="font-semibold">{currentUser?.name || 'User'}</p>
+                      <p className="text-xs text-gray-400">{currentUser?.email || ''}</p>
+                      <p className="text-xs text-neon-purple mt-1 capitalize">{currentUser?.role || 'student'}</p>
                     </div>
                     <button
                       onClick={() => { navigate('/profile'); setShowProfileMenu(false); }}
@@ -256,9 +270,21 @@ const Dashboard = () => {
                     >
                       Settings
                     </button>
+                    {currentUser?.role === 'admin' && (
+                      <button
+                        onClick={() => { navigate('/admin'); setShowProfileMenu(false); }}
+                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-neon-purple/20 transition-colors text-neon-purple"
+                      >
+                        Admin Dashboard
+                      </button>
+                    )}
                     <div className="border-t border-gray-700 mt-2 pt-2">
                       <button
-                        onClick={() => navigate('/')}
+                        onClick={() => {
+                          localStorage.removeItem('token')
+                          localStorage.removeItem('user')
+                          navigate('/login')
+                        }}
                         className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
                       >
                         Logout
@@ -287,7 +313,7 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-electric-blue/10 via-neon-purple/10 to-neon-teal/10" />
             <div className="relative z-10 flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold mb-2">Welcome back, <span className="gradient-text">Harsh!</span></h2>
+                <h2 className="text-3xl font-bold mb-2">Welcome back, <span className="gradient-text">{currentUser?.name || 'User'}!</span></h2>
                 <p className="text-gray-400">Ready to collaborate and build something amazing today?</p>
               </div>
               <motion.button

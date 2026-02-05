@@ -63,19 +63,9 @@ const LandingPage = () => {
         transition={{ duration: 1 }}
         className="relative min-h-screen flex items-center justify-center px-4"
       >
-        {/* Video Background */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="../video.mp4" type="video/mp4" />
-        </video>
-        
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-black/50" />
+        {/* Background Gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-dark to-dark" />
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" /> {/* Subtle grid pattern for tech vibe */}
         
         <div className="relative z-10 text-center max-w-6xl mx-auto">
           <motion.div

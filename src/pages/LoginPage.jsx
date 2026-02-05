@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from '../config/firebase'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -17,7 +19,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const API_URL = 'http://localhost:5000/api'
+  const API_URL = 'http://localhost:5001/api'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -57,9 +59,44 @@ const LoginPage = () => {
     }
   }
 
-  const handleGoogleAuth = () => {
-    // Simulate Google OAuth
-    navigate('/dashboard')
+  const handleGoogleAuth = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const user = result.user
+      const token = await user.getIdToken()
+
+      // Send token to backend to sync user
+      const response = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: user.email,
+          name: user.displayName,
+          photoURL: user.photoURL
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Google Auth failed')
+      }
+
+      localStorage.setItem('token', data.token) // JWT from backend
+      localStorage.setItem('user', JSON.stringify(data.user))
+
+      navigate('/dashboard')
+    } catch (err) {
+      console.error(err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

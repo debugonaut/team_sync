@@ -1,4 +1,6 @@
-export const API_URL = 'http://localhost:5001/api'
+export const API_URL = import.meta.env.PROD 
+  ? '/api'  // Production: use relative path (same domain)
+  : 'http://localhost:5001/api'  // Development: use local server
 
 export const getAuthHeader = () => {
   const token = localStorage.getItem('token')

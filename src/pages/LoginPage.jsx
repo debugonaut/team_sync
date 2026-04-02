@@ -2,6 +2,14 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup,
+  signOut
+} from 'firebase/auth'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { auth, db, googleProvider } from '../firebase'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -11,55 +19,119 @@ const LoginPage = () => {
     email: '',
     password: '',
     name: '',
-    studentId: '',
+    studentId: '', // This will be the 12-digit PRN
     rememberMe: false
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const API_URL = 'http://localhost:5000/api'
+  // Validation regex: 12-digit PRN @mitaoe.ac.in
+  const validateEmail = (email) => {
+    const emailRegex = /^\d{12}@mitaoe\.ac\.in$/
+    return emailRegex.test(email)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
+    if (!validateEmail(formData.email)) {
+      setError('Please use your official college email (12-digit PRN @mitaoe.ac.in)')
+      setLoading(false)
+      return
+    }
+
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/signup'
-      const body = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : { name: formData.name, email: formData.email, password: formData.password, studentId: formData.studentId }
+      if (isLogin) {
+        // Firebase Login
+        const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password)
+        const user = userCredential.user
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
+        // Get additional user data from Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid))
+        const userData = userDoc.data()
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed')
-      }
-
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-
-      if (data.user.role === 'admin') {
-        navigate('/admin')
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify({ ...userData, uid: user.uid }))
+          if (userData.role === 'admin') {
+            navigate('/admin')
+          } else {
+            navigate('/dashboard')
+          }
+        } else {
+          // If Firestore data missing, but auth exists
+          navigate('/dashboard')
+        }
       } else {
+        // Firebase Signup
+        if (formData.studentId.length !== 12 || !/^\d+$/.test(formData.studentId)) {
+          throw new Error('PRN must be exactly 12 digits')
+        }
+
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
+        const user = userCredential.user
+
+        // Save student data to Firestore
+        const userData = {
+          name: formData.name,
+          email: formData.email,
+          studentId: formData.studentId,
+          role: 'student', // Default role
+          createdAt: new Date().toISOString()
+        }
+
+        await setDoc(doc(db, 'users', user.uid), userData)
+
+        localStorage.setItem('user', JSON.stringify({ ...userData, uid: user.uid }))
         navigate('/dashboard')
       }
     } catch (err) {
-      setError(err.message)
+      console.error('Auth Error:', err)
+      setError(err.message.replace('Firebase: ', ''))
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGoogleAuth = () => {
-    // Simulate Google OAuth
-    navigate('/dashboard')
+  const handleGoogleAuth = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const user = result.user
+
+      // Check if the domain is correct
+      if (!validateEmail(user.email)) {
+        await signOut(auth)
+        throw new Error('Access restricted to @mitaoe.ac.in accounts with 12-digit PRN')
+      }
+
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid))
+      if (!userDoc.exists()) {
+        // First time Google login, create record
+        const prn = user.email.split('@')[0]
+        const userData = {
+          name: user.displayName,
+          email: user.email,
+          studentId: prn,
+          role: 'student',
+          createdAt: new Date().toISOString()
+        }
+        await setDoc(doc(db, 'users', user.uid), userData)
+        localStorage.setItem('user', JSON.stringify({ ...userData, uid: user.uid }))
+      } else {
+        localStorage.setItem('user', JSON.stringify({ ...userDoc.data(), uid: user.uid }))
+      }
+
+      navigate('/dashboard')
+    } catch (err) {
+      console.error('Google Auth Error:', err)
+      setError(err.message.replace('Firebase: ', ''))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -142,7 +214,7 @@ const LoginPage = () => {
               {isLogin ? 'Welcome Back' : 'Join Campus Diaries'}
             </h2>
             <p className="text-gray-400">
-              {isLogin ? 'Sign in to your account' : 'Create your account to get started'}
+              {isLogin ? 'Sign in with your MITAOE PRN Email' : 'Create your account with your PRN'}
             </p>
           </motion.div>
 
@@ -169,9 +241,14 @@ const LoginPage = () => {
                 <div>
                   <input
                     type="text"
-                    placeholder="Student ID"
+                    placeholder="12-digit PRN"
                     value={formData.studentId}
-                    onChange={(e) => setFormData({...formData, studentId: e.target.value})}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (/^\d*$/.test(val) && val.length <= 12) {
+                        setFormData({...formData, studentId: val, email: val ? `${val}@mitaoe.ac.in` : ''})
+                      }
+                    }}
                     className="w-full bg-dark-gray border border-gray-700 rounded-xl px-4 py-3 focus:border-electric-blue focus:outline-none transition-colors"
                     required
                   />
@@ -189,11 +266,12 @@ const LoginPage = () => {
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder="Email (PRN@mitaoe.ac.in)"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="w-full bg-dark-gray border border-gray-700 rounded-xl pl-12 pr-4 py-3 focus:border-electric-blue focus:outline-none transition-colors"
                 required
+                readOnly={!isLogin} // Read-only for signup because it's derived from PRN
               />
             </div>
 
@@ -256,8 +334,9 @@ const LoginPage = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="button"
+              disabled={loading}
               onClick={handleGoogleAuth}
-              className="w-full glass border border-gray-700 py-3 rounded-xl font-semibold flex items-center justify-center gap-3 hover:border-gray-600 transition-colors"
+              className="w-full glass border border-gray-700 py-3 rounded-xl font-semibold flex items-center justify-center gap-3 hover:border-gray-600 transition-colors disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

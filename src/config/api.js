@@ -1,3 +1,6 @@
+import { auth } from '../firebase'
+import { signOut } from 'firebase/auth'
+
 export const API_URL = 'http://localhost:5000/api'
 
 export const getAuthHeader = () => {
@@ -18,7 +21,12 @@ export const isAdmin = () => {
   return user?.role === 'admin'
 }
 
-export const logout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+export const logout = async () => {
+  try {
+    await signOut(auth)
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+  } catch (error) {
+    console.error('Logout error:', error)
+  }
 }

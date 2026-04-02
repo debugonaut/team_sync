@@ -19,7 +19,7 @@ const LoginPage = () => {
     email: '',
     password: '',
     name: '',
-    studentId: '', // This will be the 12-digit PRN
+    studentId: '',
     rememberMe: false
   })
   const [loading, setLoading] = useState(false)
@@ -226,9 +226,9 @@ const LoginPage = () => {
             onSubmit={handleSubmit}
             className="space-y-6"
           >
-            {!isLogin && (
-              <>
-                <div>
+            <div className="space-y-4">
+              {!isLogin && (
+                <div className="relative">
                   <input
                     type="text"
                     placeholder="Full Name"
@@ -238,7 +238,11 @@ const LoginPage = () => {
                     required
                   />
                 </div>
-                <div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-grow">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
                     type="text"
                     placeholder="12-digit PRN"
@@ -246,34 +250,28 @@ const LoginPage = () => {
                     onChange={(e) => {
                       const val = e.target.value;
                       if (/^\d*$/.test(val) && val.length <= 12) {
-                        setFormData({...formData, studentId: val, email: val ? `${val}@mitaoe.ac.in` : ''})
+                        setFormData({
+                          ...formData, 
+                          studentId: val, 
+                          email: val ? `${val}@mitaoe.ac.in` : ''
+                        })
                       }
                     }}
-                    className="w-full bg-dark-gray border border-gray-700 rounded-xl px-4 py-3 focus:border-electric-blue focus:outline-none transition-colors"
+                    className="w-full bg-dark-gray border border-gray-700 rounded-xl pl-12 pr-4 py-3 focus:border-electric-blue focus:outline-none transition-colors"
                     required
                   />
                 </div>
-              </>
-            )}
+                <div className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-400 font-medium select-none">
+                  @mitaoe.ac.in
+                </div>
+              </div>
+            </div>
 
             {error && (
               <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-xl text-sm">
                 {error}
               </div>
             )}
-
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="email"
-                placeholder="Email (PRN@mitaoe.ac.in)"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full bg-dark-gray border border-gray-700 rounded-xl pl-12 pr-4 py-3 focus:border-electric-blue focus:outline-none transition-colors"
-                required
-                readOnly={!isLogin} // Read-only for signup because it's derived from PRN
-              />
-            </div>
 
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />

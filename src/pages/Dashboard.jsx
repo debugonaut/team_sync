@@ -8,6 +8,9 @@ import {
   Palette, Megaphone, BarChart3, FolderOpen, Star, X,
 
 } from 'lucide-react'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../firebase'
+import { logout } from '../config/api'
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -15,16 +18,18 @@ const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const user = localStorage.getItem('user')
-    
-    if (!token || !user) {
-      navigate('/login')
-      return
-    }
-    
-    setCurrentUser(JSON.parse(user))
-  }, [])
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Sync local storage if needed
+        const localUser = JSON.parse(localStorage.getItem('user') || '{}')
+        setCurrentUser(localUser)
+      } else {
+        navigate('/login')
+      }
+    })
+
+    return () => unsubscribe()
+  }, [navigate])
   const [searchQuery, setSearchQuery] = useState('')
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -280,9 +285,8 @@ const Dashboard = () => {
                     )}
                     <div className="border-t border-gray-700 mt-2 pt-2">
                       <button
-                        onClick={() => {
-                          localStorage.removeItem('token')
-                          localStorage.removeItem('user')
+                        onClick={async () => {
+                          await logout()
                           navigate('/login')
                         }}
                         className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"

@@ -344,6 +344,9 @@ const LoginPage = () => {
               </svg>
               Continue with Google
             </motion.button>
+            <p className="text-center text-xs text-gray-500 mt-2">
+              Only @mitaoe.ac.in accounts with 12-digit PRN allowed
+            </p>
           </motion.form>
 
           {/* Toggle Form */}

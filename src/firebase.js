@@ -24,9 +24,10 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Optional: Set up Google Provider custom parameters
+// Restrict Google Auth to mitaoe.ac.in domain
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'select_account',
+  hd: 'mitaoe.ac.in'
 });
 
 export default app;

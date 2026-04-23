@@ -79,11 +79,11 @@
 \maketitle
 
 \begin{abstract}
-Finding compatible teammates for academic hackathons and project-based events is a persistent challenge faced by students in engineering colleges. Traditional methods of team formation rely on personal networks, chance encounters, or informal communication channels --- all of which are inefficient and often lead to skill imbalances within teams. This paper presents \textbf{MITAOE TeamSync}, a full-stack web-based collaborative platform designed specifically for students of MIT Academy of Engineering (MITAOE) to discover and connect with teammates based on skill compatibility. The system incorporates a novel swipe-based matching interface inspired by modern social-recommendation systems, a role-based authentication architecture using JSON Web Tokens (JWT), and a real-time chat module for team coordination. The backend is implemented using Node.js with Express.js and MongoDB, while the frontend is built with React 18, Vite, and Tailwind CSS. An administrative dashboard provides faculty and coordinators with full visibility over user activity and event participation. Experimental results and user evaluations demonstrate that TeamSync significantly reduces the time and effort required to form balanced, skill-diverse teams, thereby improving participation quality in technical events.
+Finding compatible teammates for academic hackathons and project-based events is a persistent challenge faced by students in engineering colleges. Traditional methods of team formation rely on personal networks, chance encounters, or informal communication channels --- all of which are inefficient and often lead to skill imbalances within teams. This paper presents \textbf{MITAOE TeamSync}, a full-stack web-based collaborative platform designed specifically for students of MIT Academy of Engineering (MITAOE) to discover and connect with teammates based on skill compatibility. The system incorporates a novel swipe-based matching interface inspired by modern social-recommendation systems, a secure authentication architecture using Firebase Auth with institutional domain restriction, and a real-time communication module using Cloud Firestore. The backend is implemented as a serverless architecture leveraging Firebase Services, while the frontend is built with React 18, Vite, and Tailwind CSS. An administrative dashboard provides faculty and coordinators with full visibility over user activity and event participation. Experimental results and user evaluations demonstrate that TeamSync significantly reduces the time and effort required to form balanced, skill-diverse teams, thereby improving participation quality in technical events.
 \end{abstract}
 
 \begin{IEEEkeywords}
-team formation, hackathon, skill matching, swipe interface, React, Node.js, JWT authentication, role-based access control, collaborative platform, academic social network
+team formation, hackathon, skill matching, swipe interface, React, Firebase, serverless, role-based access control, collaborative platform, academic social network
 \end{IEEEkeywords}
 
 % ---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ The main contributions of this work are:
 \begin{itemize}
     \item A full-stack web platform tailored for academic team formation in an engineering college context.
     \item A swipe-based, card-driven matching UI adapted from social recommendation paradigms.
-    \item A role-based JWT authentication system distinguishing between Student and Admin users.
+    \item A role-based authentication system using Firebase Auth distinguishing between Student and Admin users.
     \item A domain-specific skill profiling system for structured teammate discovery.
     \item A real-time chat interface facilitating team communication within the platform.
     \item An administrative module enabling event management and user analytics.
@@ -186,13 +186,13 @@ Open Source & \texttimes & \texttimes & \texttimes & \checkmark \\
 \end{table}
 
 \subsection{Role-Based Access in Academic Systems}
-Sandhu and Samarati \cite{sandhu1994access} established foundational principles of Role-Based Access Control (RBAC), which remain the dominant paradigm for academic information systems. TeamSync implements a lightweight RBAC model with two roles --- Student and Admin --- enforced at both the API and UI levels using JWT middleware.
+Sandhu and Samarati \cite{sandhu1994access} established foundational principles of Role-Based Access Control (RBAC), which remain the dominant paradigm for academic information systems. TeamSync implements a lightweight RBAC model with two roles --- Student and Admin --- enforced using Firebase Authentication and Firestore security rules.
 
 % ---------------------------------------------------------------------------
 \section{System Architecture}
 
 \subsection{Overview}
-TeamSync follows a client-server architecture with a clearly separated frontend SPA (Single Page Application) and a RESTful backend API. Figure~\ref{fig:architecture} presents the system architecture.
+TeamSync follows a modern serverless architecture with a clearly separated frontend SPA (Single Page Application) and Firebase backend services. Figure~\ref{fig:architecture} presents the system architecture.
 
 \begin{figure}[htbp]
 \centering
@@ -212,23 +212,23 @@ TeamSync follows a client-server architecture with a clearly separated frontend 
   \end{pgfonlayer}
 
   % API layer
-  \node[box, fill=orange!20, minimum width=5.2em, below=0.9cm of router] (express) {Express.js API\\{\tiny Node.js}};
-  \node[box, fill=orange!20, minimum width=5.2em, left=0.4cm of express] (authmw) {Auth Middleware\\{\tiny JWT Verify}};
-  \node[box, fill=orange!20, minimum width=5.2em, right=0.4cm of express] (adminmw) {Admin Guard\\{\tiny Role Check}};
+  \node[box, fill=orange!20, minimum width=5.2em, below=0.9cm of router] (express) {Firebase SDK\\{\tiny Client Libs}};
+  \node[box, fill=orange!20, minimum width=5.2em, left=0.4cm of express] (authmw) {Firebase Auth\\{\tiny Authentication}};
+  \node[box, fill=orange!20, minimum width=5.2em, right=0.4cm of express] (adminmw) {Role Mgmt\\{\tiny Firestore}};
 
   \begin{pgfonlayer}{background}
     \node[fit=(authmw)(express)(adminmw), fill=orange!5, draw=orange!50, rounded corners,
-          label={[font=\scriptsize]above:Backend Layer}, inner sep=4pt] (be) {};
+          label={[font=\scriptsize]above:Backend Services Layer}, inner sep=4pt] (be) {};
   \end{pgfonlayer}
 
   % DB layer
-  \node[dbbox, below=0.9cm of express] (mongo) {MongoDB\\{\tiny Mongoose ODM}};
+  \node[dbbox, below=0.9cm of express] (mongo) {Firestore DB\\{\tiny Real-time NoSQL}};
 
   % Arrows
   \draw[arrow] (browser) -- (router);
-  \draw[arrow] ([xshift=0.05cm]fe.south) -- ([xshift=0.05cm]be.north) node[midway, right, font=\tiny] {REST / JSON};
+  \draw[arrow] ([xshift=0.05cm]fe.south) -- ([xshift=0.05cm]be.north) node[midway, right, font=\tiny] {Secure Calls};
   \draw[arrow] ([xshift=-0.05cm]be.north) -- ([xshift=-0.05cm]fe.south);
-  \draw[arrow] (express) -- (mongo) node[midway, right, font=\tiny] {Mongoose};
+  \draw[arrow] (express) -- (mongo) node[midway, right, font=\tiny] {Queries/Listeners};
 
 \end{tikzpicture}
 \caption{System architecture of MITAOE TeamSync.}
@@ -236,24 +236,24 @@ TeamSync follows a client-server architecture with a clearly separated frontend 
 \end{figure}
 
 \subsection{Frontend Architecture}
-The frontend is built with \textbf{React 18} \cite{react2022} using functional components and hooks. \textbf{Vite} is used as the build tool and development server for its significantly faster hot module replacement (HMR) compared to Create React App. The UI leverages \textbf{Tailwind CSS} for utility-first styling and \textbf{Framer Motion} for page transitions. Client-side routing is handled by \textbf{React Router v6}, supporting protected routes that verify JWT \cite{jwt2015} validity before rendering.
+The frontend is built with \textbf{React 18} \cite{react2022} using functional components and hooks. \textbf{Vite} is used as the build tool and development server for its significantly faster hot module replacement (HMR) compared to Create React App. The UI leverages \textbf{Tailwind CSS} for utility-first styling and \textbf{Framer Motion} for page transitions. Client-side routing is handled by \textbf{React Router v6}, supporting protected routes that verify Firebase authentication state before rendering.
 
 \subsection{Backend Architecture}
-The backend is a \textbf{Node.js + Express.js} \cite{expressjs} RESTful API server. Data persistence is provided by \textbf{MongoDB} \cite{mongodb2021} through the \textbf{Mongoose} ODM. Authentication state is managed statelessly via \textbf{JWT} \cite{jwt2015}, with tokens containing the user ID and role to support authorization decisions without database round-trips.
+The backend leverages a \textbf{serverless architecture using Firebase} \cite{firebase2023}. Data persistence is provided by \textbf{Firestore}, a flexible, scalable NoSQL cloud database. Authentication state is managed via \textbf{Firebase Authentication}, enabling both email/password sign-in and Google OAuth restricted specifically to the \texttt{mitaoe.ac.in} domain to ensure platform exclusivity.
 
 \subsection{Authentication \& Authorization}
-Figure~\ref{fig:authflow} illustrates the complete authentication flow. Upon successful login, a signed JWT is issued, stored in \texttt{localStorage}, and attached to subsequent requests via the \texttt{Authorization: Bearer} header.
+Figure~\ref{fig:authflow} illustrates the complete authentication flow. Upon successful login (via email/password or Google OAuth), Firebase Auth manages session state and provides a secure user object. The application subsequently fetches the user's role from their associated Firestore document.
 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[node distance=0.45cm]
   \node[flowbox, fill=gray!20] (start) {User visits Login Page};
-  \node[flowbox, below=of start] (creds) {Enter Credentials};
-  \node[flowbox, below=of creds] (post) {POST /api/auth/login};
-  \node[decision, below=of post] (valid) {Valid\\Creds?};
+  \node[flowbox, below=of start] (creds) {Firebase Auth Sign-In};
+  \node[flowbox, below=of creds] (post) {Verify @mitaoe.ac.in domain};
+  \node[decision, below=of post] (valid) {Valid\\Domain?};
   \node[flowbox, right=0.6cm of valid, fill=red!15] (err) {Return 401\\Error};
-  \node[flowbox, below=of valid] (jwt) {Issue Signed JWT\\(userId + role)};
-  \node[flowbox, below=of jwt] (store) {Store in localStorage};
+  \node[flowbox, below=of valid] (jwt) {Fetch User Doc from Firestore};
+  \node[flowbox, below=of jwt] (store) {Store State in localStorage};
   \node[decision, below=of store] (role) {Role = Admin?};
   \node[endbox, right=0.6cm of role, fill=blue!15] (admin) {Admin\\Dashboard};
   \node[endbox, below=of role, fill=green!15] (student) {Student\\Dashboard};
@@ -269,7 +269,7 @@ Figure~\ref{fig:authflow} illustrates the complete authentication flow. Upon suc
   \draw[arrow] (role) -- node[midway,above,font=\tiny]{Yes} (admin);
   \draw[arrow] (role) -- node[midway,right,font=\tiny]{No} (student);
 \end{tikzpicture}
-\caption{JWT-based authentication and role-routing flow.}
+\caption{Firebase authentication and role-routing flow.}
 \label{fig:authflow}
 \end{figure}
 
@@ -277,7 +277,7 @@ Figure~\ref{fig:authflow} illustrates the complete authentication flow. Upon suc
 \section{Implementation}
 
 \subsection{Database Schema}
-The core data entity is the \textbf{User} document, stored in MongoDB with the following primary fields:
+The core data entity is the \textbf{User} document, stored in a Firestore collection with the following primary fields:
 
 \begin{table}[htbp]
 \caption{User Schema Fields}
@@ -291,7 +291,7 @@ name & String & Full name of the student \\
 \hline
 email & String & Institutional email (unique) \\
 \hline
-password & String & bcryptjs hashed password \\
+password & String & Managed by Firebase Auth \\
 \hline
 studentId & String & MITAOE roll number \\
 \hline
@@ -308,46 +308,17 @@ createdAt & Date & Account creation timestamp \\
 \end{tabular}
 \end{table}
 
-\subsection{API Design}
-The RESTful API is organized into three route groups, each mounted under \texttt{/api}:
-
-\begin{table}[htbp]
-\caption{Core API Endpoints}
-\label{tab:api}
-\centering
-\begin{tabular}{|p{0.10\columnwidth}|p{0.40\columnwidth}|p{0.35\columnwidth}|}
-\hline
-\textbf{Method} & \textbf{Endpoint} & \textbf{Description} \\
-\hline
-POST & /auth/signup & Register new student \\
-\hline
-POST & /auth/login & Authenticate \& get JWT \\
-\hline
-GET & /profile/:id & Fetch user profile \\
-\hline
-PUT & /profile/:id & Update user profile \\
-\hline
-GET & /users & List all users \\
-\hline
-GET & /admin/users & All users (Admin only) \\
-\hline
-DELETE & /admin/users/:id & Delete user (Admin) \\
-\hline
-PATCH & /admin/users/:id/role & Toggle role (Admin) \\
-\hline
-GET & /admin/analytics & Platform statistics \\
-\hline
-\end{tabular}
-\end{table}
+\subsection{Data Management Pattern}
+Instead of traditional REST APIs, TeamSync utilizes Firebase SDK client-side data fetching. Data is organized into structured Firestore collections such as `users`, `teams`, and `messages`. This architecture drastically reduces backend operational complexity while ensuring real-time data sync across all connected clients.
 
 \subsection{Swipe-Based Team Matching Interface}
 The team-matching page renders student profiles as swipeable cards. Each card displays the candidate's name, primary domain, skill tags, and a brief bio. Users can swipe right to indicate interest in a teammate, or swipe left to skip. The cards are animated using Framer Motion's drag gesture API, providing tactile, physics-based feedback.
 
 \subsection{Role-Based Dashboard System}
-Upon login, the application reads the \texttt{role} field from the JWT payload and routes accordingly:
+Upon login, the application reads the \texttt{role} field from the user's Firestore document and routes accordingly:
 \begin{itemize}
-    \item \textbf{Student Dashboard}: Displays event participation metrics, team status, active chats, and matched teammates.
-    \item \textbf{Admin Dashboard}: Provides a user management table with role toggle and delete capabilities, platform-wide analytics, and event management tools.
+    \item \textbf{Student Dashboard}: Displays event participation metrics, team status, active chats, and matched teammates. Real-time Firestore listeners update the UI instantly when a match or message occurs.
+    \item \textbf{Admin Dashboard}: Provides user management with Firestore role update capabilities, platform-wide analytics visualized using Firebase Analytics data, and event management tools.
 \end{itemize}
 
 \subsection{Chat Interface}
@@ -373,11 +344,11 @@ Routing & React Router v6 & Navigation \\
 \hline
 Icons & Lucide React & Iconography \\
 \hline
-Backend & Node.js, Express.js & REST API server \\
+Backend & Firebase Cloud Platform & Serverless backend \\
 \hline
-Database & MongoDB, Mongoose & Data persistence \\
+Database & Firestore & Real-time NoSQL DB \\
 \hline
-Auth & JWT, bcryptjs & Auth, password hashing \\
+Auth & Firebase Authentication & Auth, strict domain mgmt \\
 \hline
 Dev Tools & Git, GitHub, VSCode & Version control, IDE \\
 \hline
@@ -390,14 +361,14 @@ Dev Tools & Git, GitHub, VSCode & Version control, IDE \\
 \subsection{Functional Testing}
 All primary use cases were validated through manual end-to-end testing. Key flows tested include:
 \begin{itemize}
-    \item Student registration and login with JWT issuance.
+    \item Student registration and login with Firebase Auth.
     \item Profile creation with skill tag selection.
     \item Swipe-based matching flow and connection.
     \item Team chat message send and receive.
     \item Admin user management (role toggle, deletion).
     \item Protected route enforcement for both roles.
 \end{itemize}
-All flows functioned correctly with appropriate error handling for invalid credentials and unauthorized access attempts.
+All flows functioned correctly with appropriate error handling for invalid institutional credentials and unauthorized access attempts handled by Firestore Security Rules.
 
 \subsection{Team Formation Trend}
 Figure~\ref{fig:trend} shows the simulated weekly growth in successful team formations recorded during the pilot deployment of TeamSync. The steady upward trend confirms that the swipe-based interface encourages progressive adoption and return usage.
@@ -610,7 +581,7 @@ While TeamSync fulfills its core objectives, several limitations exist:
 % ---------------------------------------------------------------------------
 \section{Conclusion}
 
-This paper presented \textbf{MITAOE TeamSync}, a web-based platform addressing the persistent problem of ad hoc team formation for academic hackathons. By combining a swipe-driven matching interface, domain-specific skill profiling, JWT role-based authentication, and an integrated chat module, TeamSync provides MITAOE students with a structured and engaging teammate discovery experience. Built entirely on open-source technologies at a total cost of Rs.~58.00, the platform demonstrates that high-quality, feature-rich academic software can be delivered with minimal financial resources. The system serves as both a practical tool for students and a proof-of-concept for AI-augmented team formation in future iterations.
+This paper presented \textbf{MITAOE TeamSync}, a web-based platform addressing the persistent problem of ad hoc team formation for academic hackathons. By combining a swipe-driven matching interface, domain-specific skill profiling, strict Firebase-based role authentication, and an integrated chat module, TeamSync provides MITAOE students with a structured and engaging teammate discovery experience. Built almost entirely on serverless Firebase technologies and open-source frontend frameworks at a total cost of Rs.~58.00, the platform demonstrates that high-quality, feature-rich academic software can be delivered with minimal financial resources. The system serves as both a practical tool for students and a proof-of-concept for AI-augmented team formation in future iterations.
 
 % ---------------------------------------------------------------------------
 \begin{thebibliography}{00}
@@ -633,17 +604,13 @@ T. Daradoumis, R. Bassi, F. Xhafa, and S. Caball\'{e}, ``A review on massive e-l
 \bibitem{sandhu1994access}
 R. S. Sandhu and P. Samarati, ``Access control: Principles and practice,'' \textit{IEEE Communications Magazine}, vol. 32, no. 9, pp. 40--48, Sep. 1994.
 
-\bibitem{jwt2015}
-M. Jones, J. Bradley, and N. Sakimura, ``JSON Web Token (JWT),'' \textit{RFC 7519}, Internet Engineering Task Force (IETF), May 2015.
-
-\bibitem{mongodb2021}
-S. Chodorow, \textit{MongoDB: The Definitive Guide}, 3rd ed. Sebastopol, CA: O'Reilly Media, 2019.
+\bibitem{firebase2023}
+Google LLC, ``Firebase -- An app development platform that helps you build and grow apps and games,'' 2023. [Online]. Available: \url{https://firebase.google.com}
 
 \bibitem{react2022}
 Facebook Inc., ``React -- A JavaScript library for building user interfaces,'' Version 18, 2022. [Online]. Available: \url{https://reactjs.org}
 
-\bibitem{expressjs}
-T. J. Holowaychuk, ``Express.js -- Fast, unopinionated, minimalist web framework for Node.js.'' [Online]. Available: \url{https://expressjs.com}
+
 
 \end{thebibliography}
 
